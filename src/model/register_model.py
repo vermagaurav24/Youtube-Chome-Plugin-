@@ -4,10 +4,10 @@ import json
 import mlflow
 import logging
 import os
+from mlflow.tracking import MlflowClient
 
 # Set up MLflow tracking URI
 mlflow.set_tracking_uri("http://ec2-13-51-196-160.eu-north-1.compute.amazonaws.com:5000/")
-
 
 # logging configuration
 logger = logging.getLogger('model_registration')
@@ -43,13 +43,22 @@ def load_model_info(file_path: str) -> dict:
 def register_model(model_name: str, model_info: dict):
     """Register the model to the MLflow Model Registry."""
     try:
+        client = MlflowClient()
+
+        # NEW: Check that the artifact actually exists before registering
+        artifacts = client.list_artifacts(model_info['run_id'], model_info['model_path'])
+        if not artifacts:
+            raise FileNotFoundError(
+                f"No artifacts found at '{model_info['model_path']}' for run {model_info['run_id']}.\n"
+                f"Make sure experiment_info.json has the run_id from the training run that logged the model."
+            )
+
         model_uri = f"runs:/{model_info['run_id']}/{model_info['model_path']}"
         
         # Register the model
         model_version = mlflow.register_model(model_uri, model_name)
         
         # Transition the model to "Staging" stage
-        client = mlflow.tracking.MlflowClient()
         client.transition_model_version_stage(
             name=model_name,
             version=model_version.version,
