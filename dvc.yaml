@@ -35,6 +35,7 @@ stages:
   model_evaluation:
     cmd: python src/model/model_evaluation.py
     deps:
+    - src/model/model_evaluation.py
     - lgbm_model.pkl
     - tfidf_vectorizer.pkl
     - data/interim/train_processed.csv
@@ -43,8 +44,3 @@ stages:
     outs:
     - experiment_info.json
 
-  model_registration:
-    cmd: python src/model/register_model.py
-    deps:
-    - experiment_info.json
-    - src/model/register_model.py
